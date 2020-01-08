@@ -1,0 +1,6 @@
+# capture.py
+picamera
+azure.storage.blob
+
+# post_id.py
+requests
