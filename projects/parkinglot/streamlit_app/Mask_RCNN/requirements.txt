@@ -1,0 +1,16 @@
+numpy
+scipy
+Pillow
+cython
+matplotlib
+scikit-image
+tensorflow==1.14
+keras==2.2.5
+opencv-python
+h5py
+imgaug
+IPython[all]
+streamlit
+azure-storage-blob
+dateparser
+azure-cosmosdb-table

@@ -1,10 +1,13 @@
 import time
 import azure.storage.blob as blb
 
-conn_str = 'azure connection string'
+
+conn_str = 'azure blob connection string'
 container_name = 'images'
 
 SLEEP = 5
+
+ROOM_NAME = 'RM19'
 
 from io import BytesIO
 from time import sleep
@@ -13,12 +16,15 @@ from picamera import PiCamera
 import sys
 print(sys.version_info)
 
+camera = PiCamera()
+
+counter = 0
+
 while True:
     # Create the in-memory stream
     stream = BytesIO()
-    camera = PiCamera()
-#    camera.start_preview()
-#    sleep(2)
+
+    # Capture current image from camera
     camera.capture(stream, format='jpeg')
     time_now = time.ctime().replace(' ', '_')
 
@@ -26,7 +32,7 @@ while True:
     stream.seek(0)
 
     # Create blob client
-    blob_name = f'parkinglot_{time_now}.jpeg'
+    blob_name = f'parkinglot_{ROOM_NAME}_{time_now}.jpeg'
     blob_client = blb.BlobClient.from_connection_string(conn_str=conn_str, container_name=container_name, blob_name=blob_name)
 
     # Save image to blob
@@ -35,4 +41,8 @@ while True:
     print(f'file {blob_name} uploaded.')
 
     # Sleep
-    time.sleep(SLEEP * 60)
+    if counter < 12:
+        time.sleep(5)
+        counter += 1
+    else:
+        time.sleep(SLEEP * 60)

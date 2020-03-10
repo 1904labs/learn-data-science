@@ -1,0 +1,1 @@
+Flask server to acces the latest parking lot image and predicted count.
