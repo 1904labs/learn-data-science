@@ -17,7 +17,10 @@ from tf_agents.utils.common import function
 from tf_agents.eval.metric_utils import log_metrics
 import logging
 from tf_agents.policies.policy_saver import PolicySaver
-
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+import os
+import PIL
 
 logging.getLogger().setLevel(logging.INFO)
 
@@ -144,15 +147,68 @@ def train_agent(n_iterations):
         print("\r{} loss:{:.5f} done:{:.5f}".format(iteration, train_loss.loss.numpy(), iteration / n_iterations * 100.0), end="")
         if iteration % 1000 == 0:
             log_metrics(train_metrics)
-        if iteration % 100 == 0 and iteration > 0:
+        if iteration % 10000 == 0 and iteration > 0:
             #keras.saved_model.saved_model(my_policy, 'policy_' + str(iteration))
             #tf.saved_model.save(agent, 'policy_' + str(iteration))
-            my_policy = agent.collect_policy
+            my_policy = agent.policy
             saver = PolicySaver(my_policy)
             saver.save('policy_' + str(iteration))
+        #    pass
     
-#train_agent(10000000)
-
 train_agent(10000000)
 
-tf.saved_model.save(agent, "full_run")
+#train_agent(10000000)
+#train_agent(10000)
+
+#tf.saved_model.save(agent, "full_run")
+# frames = []
+# def save_frames(trajectory):
+#     global frames
+#     frames.append(tf_env.pyenv.envs[0].render(mode="rgb_array"))
+
+
+# ### Run Portion
+# prev_lives = tf_env.pyenv.envs[0].ale.lives()
+# def reset_and_fire_on_life_lost(trajectory):
+#     global prev_lives
+#     lives = tf_env.pyenv.envs[0].ale.lives()
+#     if prev_lives != lives:
+#         tf_env.reset()
+#         tf_env.pyenv.envs[0].step(np.array(1, dtype = np.int32))
+#         prev_lives = lives
+
+
+# watch_driver = DynamicStepDriver(
+#     tf_env,
+#     agent.policy,
+#     observers=[save_frames, reset_and_fire_on_life_lost, ShowProgress(1000)],
+#     num_steps=1000)
+# final_time_step, final_policy_state = watch_driver.run()
+
+# def update_scene(num, frames, patch):
+#     patch.set_data(frames[num])
+#     return patch,
+
+# def plot_animation(frames, repeat=False, interval=40):
+#     fig = plt.figure()
+#     patch = plt.imshow(frames[0])
+#     plt.axis('off')
+#     anim = animation.FuncAnimation(
+#         fig, update_scene, fargs=(frames, patch),
+#         frames=len(frames), repeat=repeat, interval=interval)
+#     plt.close()
+#     return anim
+
+# plot_animation(frames)
+
+
+# image_path = os.path.join("images", "rl", "breakout.gif")
+# frame_images = [PIL.Image.fromarray(frame) for frame in frames[:150]]
+# frame_images[0].save(image_path, format='GIF',
+#                      append_images=frame_images[1:],
+#                      save_all=True,
+#                      duration=30,
+#                      loop=0)
+
+
+

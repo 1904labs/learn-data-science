@@ -19,7 +19,8 @@ import logging
 import tensorflow.keras as keras
 import matplotlib.pyplot as plt
 import PIL
-
+import matplotlib.animation as animation
+import os
 max_episode_steps = 27000
 environment_name = "BreakoutNoFrameskip-v4"
 
@@ -29,7 +30,7 @@ env = suite_atari.load(environment_name, max_episode_steps = max_episode_steps,
 tf_env = TFPyEnvironment(env)
 
 
-#agent = keras.models.load_model('policy_100')
+#agent = keras.models.load_model('policy_900')
 
 class ShowProgress:
     def __init__(self, total):
@@ -43,32 +44,42 @@ class ShowProgress:
             print("\r{}/{}".format(self.counter, self.total), end="")
 
 
-
+frames=[]
 def save_frames(trajectory):
     global frames
     frames.append(tf_env.pyenv.envs[0].render(mode="rgb_array"))
+
+def debug_trajectory(trajectory):
+    print(trajectory.action)
 
 prev_lives = tf_env.pyenv.envs[0].ale.lives()
 def reset_and_fire_on_life_lost(trajectory):
     global prev_lives
     lives = tf_env.pyenv.envs[0].ale.lives()
     if prev_lives != lives:
-        tf_env.reset()
-        tf_env.pyenv.envs[0].step(1)
+        #tf_env.reset()
+        tf_env.pyenv.envs[0].step(np.array(1, dtype=np.int32))
         prev_lives = lives
 
 
 #print(type(agent))
-#saved_policy = tf.compat.v2.saved_model.load('policy_100')
+saved_policy = tf.compat.v2.saved_model.load('policy_8000')
 #agent = tf.saved_model.load('policy_100')
-agent = tf.keras.models.load_model('policy_100')
-print(type(agent))
+#agent = tf.keras.models.load_model('policy_100')
+#agent = tf.keras.models.load_model('policy_100')
+#policy = tf.saved_model.load('')
+#print(type(agent))
 watch_driver = DynamicStepDriver(
     tf_env,
-    agent,
-    observers=[save_frames, reset_and_fire_on_life_lost, ShowProgress(1000)],
-    num_steps=1000)
+    saved_policy,
+    observers=[save_frames, reset_and_fire_on_life_lost, ShowProgress(max_episode_steps)],
+    num_steps=max_episode_steps)
+#tf_env.pyenv.envs[0].step(np.array(1, dtype=np.int32))
 final_time_step, final_policy_state = watch_driver.run()
+
+def update_scene(num, frames, patch):
+    patch.set_data(frames[num])
+    return patch,
 
 def plot_animation(frames, repeat=False, interval=40):
     fig = plt.figure()
@@ -80,14 +91,18 @@ def plot_animation(frames, repeat=False, interval=40):
     plt.close()
     return anim
 
-plot_animation(frames)
+#plot_animation(frames)
 
 
 image_path = os.path.join("images", "rl", "breakout.gif")
-frame_images = [PIL.Image.fromarray(frame) for frame in frames[:150]]
+frame_images = [PIL.Image.fromarray(frame) for frame in frames]
 frame_images[0].save(image_path, format='GIF',
                      append_images=frame_images[1:],
                      save_all=True,
                      duration=30,
                      loop=0)
 
+
+# for idx, frame in enumerate(frame_images):
+#     image_path =  os.path.join("images", "rl", f"{idx}.gif")
+#     frame.save(image_path, format = 'GIF')
