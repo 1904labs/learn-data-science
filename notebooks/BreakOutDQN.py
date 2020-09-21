@@ -21,6 +21,28 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import os
 import PIL
+import sys
+from tf_agents.replay_buffers.py_hashed_replay_buffer import PyHashedReplayBuffer
+
+from tensorflow.keras import backend as K
+config = tf.compat.v1.ConfigProto()
+config.gpu_options.allow_growth = True
+config.log_device_placement = True
+session = tf.compat.v1.Session(config=config)
+tf.compat.v1.keras.backend.set_session(session)
+
+def load_policy_from_disk(policy_num):
+    saved_policy = tf.compat.v2.saved_model.load(f'backupPol/policy_{policy_num}')
+    return saved_policy
+
+
+initial_policy = 0
+if len(sys.argv) == 2:
+    initial_policy = int(sys.argv[1])
+
+policy = None    
+if initial_policy != 0:
+    policy = load_policy_from_disk(initial_policy)
 
 logging.getLogger().setLevel(logging.INFO)
 
@@ -30,6 +52,9 @@ environment_name = "BreakoutNoFrameskip-v4"
 
 env = suite_atari.load(environment_name, max_episode_steps = max_episode_steps, 
                 gym_env_wrappers=[AtariPreprocessing,FrameStack4 ])
+tf.random.set_seed(42)
+np.random.seed(42)
+env.seed(42)
 
 tf_env = TFPyEnvironment(env)
 
@@ -81,15 +106,26 @@ agent = DqnAgent(
     epsilon_greedy = lambda: epsilon_fn(train_step))
 
 agent.initialize()
+if policy != None:
+    agent.policy = policy
+    
 
 print("After  Agent.initialize()")
+
 
 replay_buffer = tf_uniform_replay_buffer.TFUniformReplayBuffer(
     data_spec = agent.collect_data_spec,
     batch_size = tf_env.batch_size,
-    max_length = 1000000
+    max_length = 100000
 )
 
+"""
+replay_buffer = PyHashedReplayBuffer(
+    data_spec = agent.collect_data_spec,
+    #batch_size = tf_env.batch_size,
+    capacity = 1000000
+)
+"""
 print("After  replay_buffer")
 replay_buffer_observer = replay_buffer.add_batch
 
@@ -140,7 +176,7 @@ def train_agent(n_iterations):
     time_step = None
     policy_state = agent.collect_policy.get_initial_state(tf_env.batch_size)
     iterator = iter(dataset)
-    for iteration in range(n_iterations):
+    for iteration in range(initial_policy, n_iterations):
         time_step, policy_state = collect_driver.run(time_step, policy_state)
         trajectories, buffer_info = next(iterator)
         train_loss = agent.train(trajectories)
@@ -212,3 +248,4 @@ train_agent(10000000)
 
 
 
+#K.get_session().close();
